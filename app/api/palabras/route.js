@@ -3,7 +3,7 @@ const ignored = new Set('a al algo ante como con de del donde el en es esa ese e
 const memory = globalThis.expoiaWords ??= new Map();
 
 async function redis(command) {
-  const { UPSTASH_REDIS_REST_URL: url, UPSTASH_REDIS_REST_TOKEN: token } = process.env;
+  const { url, token } = redisConfig();
   if (!url || !token) throw new Error('Redis requiere URL y token');
   const response = await fetch(url, {
     method: 'POST',
@@ -18,8 +18,21 @@ async function redis(command) {
   return data.result;
 }
 
+function redisConfig() {
+  const {
+    UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN,
+    KV_REST_API_URL, KV_REST_API_TOKEN,
+  } = process.env;
+  if (UPSTASH_REDIS_REST_URL && UPSTASH_REDIS_REST_TOKEN) {
+    return { url: UPSTASH_REDIS_REST_URL, token: UPSTASH_REDIS_REST_TOKEN };
+  }
+  return { url: KV_REST_API_URL, token: KV_REST_API_TOKEN };
+}
+
 function local() {
-  return !process.env.VERCEL && !process.env.UPSTASH_REDIS_REST_URL && !process.env.UPSTASH_REDIS_REST_TOKEN;
+  const { url, token } = redisConfig();
+  return !process.env.VERCEL && !url && !token
+    && !process.env.UPSTASH_REDIS_REST_URL && !process.env.UPSTASH_REDIS_REST_TOKEN;
 }
 
 export async function GET() {
